@@ -1,8 +1,17 @@
 # frozen_string_literal: true
 
-require_relative "openid_backchannel_logout/version"
+require 'openid_backchannel_logout/configuration'
+require 'openid_backchannel_logout/executor'
 
 module OpenidBackchannelLogout
-  class Error < StandardError; end
-  # Your code goes here...
+  class << self
+    attr_accessor :configuration
+
+    def configure
+      self.configuration ||= Configuration.new
+      yield(configuration)
+
+      configuration.validate!
+    end
+  end
 end
