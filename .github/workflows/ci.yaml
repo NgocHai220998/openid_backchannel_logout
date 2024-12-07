@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  spec:
+    strategy:
+      matrix:
+        os: ['ubuntu-22.04', 'ubuntu-24.04']
+        ruby-version: ['3.2', '3.3']
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{ matrix.ruby-version }}
+        bundler-cache: true
+    - name: Run Specs
+      run: bundle exec rspec
