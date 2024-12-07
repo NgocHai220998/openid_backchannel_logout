@@ -1,43 +1,102 @@
-# OpenidBackchannelLogout
+# OpenID Backchannel Logout
 
-TODO: Delete this and the text below, and describe your gem
+The OpenidBackchannelLogout gem offers an easy way to implement OpenID Connect Back-Channel Logout functionality in your **Ruby on Rails** application. It is designed to comply to the [OpenID Connect Back-Channel Logout](https://openid.net/specs/openid-connect-backchannel-1_0.html) specification for client-side operations.
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/openid_backchannel_logout`. To experiment with that code, run `bin/console` for an interactive prompt.
+Gem: https://rubygems.org/gems/openid_backchannel_logout
+
+If you notice any issues, feel free to let me know (^-^)
+
+## Features
+
+- Validates Logout Tokens according to the OpenID Connect specification.
+- Handles back-channel logout requests with minimal setup.
+- Rails generator for auto-creating controllers, routes, and initializers.
 
 ## Installation
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
-
-Install the gem and add to the application's Gemfile by executing:
-
-```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+Add the gem to your Gemfile:
+```ruby
+gem 'openid_backchannel_logout'
 ```
 
-If bundler is not being used to manage dependencies, install the gem by executing:
-
-```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+Then install it:
+```ruby
+bundle install
 ```
 
-## Usage
+Basic Usage:
+```ruby
+# in your controller
 
-TODO: Write usage instructions here
+OpenidBackchannelLogout::Executor.new.call(request) do |sub, sid|
+  Rails.logger.info("Logging out user with sub: #{sub}, sid: #{sid}")
+  # TODO: Implement the logic to logout the user
+end
+```
 
-## Development
+Or you can use ↓
 
-After checking out the repo, run `bin/setup` to install dependencies. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+## Generators
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+**1. Setup Configuration**
 
-## Contributing
+Run the gem's generator to set up the configuration, controller, and routes:
+```bash
+rails generate openid_backchannel_logout:install
+```
+***This will*:**
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/openid_backchannel_logout. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/[USERNAME]/openid_backchannel_logout/blob/master/CODE_OF_CONDUCT.md).
+**Create an initializer at `config/initializers/openid_backchannel_logout.rb`**:
+```ruby
+OpenidBackchannelLogout.configure do |config|
+  config.issuer = ENV.fetch('OIDC_ISSUER', '') # OpenID Provider
+  config.audience = ENV.fetch('OIDC_CLIENT_ID', '') # Your Client ID
+end
+```
+Set the required environment variables in your application:
+- `OIDC_ISSUER`: The OpenID Provider's URL (e.g., https://idp.example.com).
+- `OIDC_CLIENT_ID`: The Client ID registered with the OpenID Provider.
+
+**Create a controller at `app/controllers/api/internal/backchannel_logouts_controller.rb`**:
+```ruby
+module Api
+  module Internal
+    class BackchannelLogoutsController < ActionController::API
+      def create
+        OpenidBackchannelLogout::Executor.new.call(request) do |sub, sid|
+          Rails.logger.info("Logging out user with sub: #{sub}, sid: #{sid}")
+          # TODO: Implement the logic to logout the user
+        end
+
+        render plain: 'Logout successful', status: :ok
+      rescue StandardError => e
+        Rails.logger.error("Backchannel logout error: #{e.message}")
+        render plain: e.message, status: :bad_request
+      end
+    end
+  end
+end
+```
+You can customize the create action to define how your application should log out users based on sub (subject identifier) or sid (session ID).
+
+**Add a route to `config/routes.rb`**:
+```ruby
+namespace :api, defaults: { format: 'json' } do
+  namespace :internal do
+    resource :backchannel_logout, only: :create
+  end
+end
+```
+
+***Note***: You can customize it in any way you like.
+
+## Testing
+
+```bash
+bundle exec rspec
+```
+If you are integrating the gem into your application, you can also test the generated routes and controller by simulating logout requests.
 
 ## License
 
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
-
-## Code of Conduct
-
-Everyone interacting in the OpenidBackchannelLogout project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/openid_backchannel_logout/blob/master/CODE_OF_CONDUCT.md).
